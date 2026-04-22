@@ -330,7 +330,8 @@ export default function Viewer() {
           const url = canvas.toDataURL('image/png');
           const a = document.createElement('a');
           a.href = url;
-          a.download = `patient_${id}_screenshot.png`;
+          const filenameId = patient?.id || id;
+          a.download = `patient_${filenameId}_screenshot.png`;
           a.click();
         } catch {
           return;
@@ -661,7 +662,8 @@ export default function Viewer() {
 
         // Get filename from headers or create default
         const contentDisposition = response.headers.get('content-disposition');
-        let filename = `tumor_analysis_report_${id}.pdf`;
+        const filenameId = patient?.id || id;
+        let filename = `tumor_analysis_report_${filenameId}.pdf`;
         if (contentDisposition) {
           const filenameMatch = contentDisposition.match(/filename="(.+)"/);
           if (filenameMatch) {
@@ -797,7 +799,7 @@ export default function Viewer() {
         </div>
 
         <div className="viewer-header-info">
-          <span className="viewer-header-badge">DB #{id || '—'}</span>
+          <span className="viewer-header-badge">PT #{patient?.id || id || '—'}</span>
           {patient?.patient_id && <span className="viewer-header-badge">Patient ID: {patient.patient_id}</span>}
           <span className="viewer-header-badge">{patient?.patient_name || 'Loading...'}</span>
           <Link to="/patients" className="viewer-nav-link">← All Patients</Link>
@@ -816,7 +818,7 @@ export default function Viewer() {
                 <div className="viewer-info-card">
                   <div className="viewer-info-row">
                     <span className="viewer-info-label">DB ID</span>
-                    <span className="viewer-info-value accent">#{id || '—'}</span>
+                    <span className="viewer-info-value accent">#{patient?.id || '—'}</span>
                   </div>
                   <div className="viewer-info-row">
                     <span className="viewer-info-label">Patient ID</span>
@@ -835,7 +837,7 @@ export default function Viewer() {
                     <span className="viewer-info-value">{patient?.doctor_name || '—'}</span>
                   </div>
                   <div className="viewer-info-row">
-                    <span className="viewer-info-label">Case/Study</span>
+                    <span className="viewer-info-label">Case Study</span>
                     <span className="viewer-info-value">{patient?.case_study || 'MRI Brain'}</span>
                   </div>
                   <div className="viewer-info-row">
@@ -1253,7 +1255,7 @@ export default function Viewer() {
                               </div>
                               <div className="clinical-report-patient-cell">
                                 <div className="clinical-report-label">Report ID</div>
-                                <div className="clinical-report-value">#{id || '—'}</div>
+                                <div className="clinical-report-value">#{patient?.id || '—'}</div>
                               </div>
                               <div className="clinical-report-patient-cell">
                                 <div className="clinical-report-label">Patient ID</div>

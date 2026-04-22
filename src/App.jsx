@@ -8,7 +8,8 @@ import { isAuthenticated, hasRole } from './auth';
 
 function ProtectedRoute({ children, allowedRoles }) {
   if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />;
+    window.location.href = "http://localhost:5173/frontend_mri/login#/login";
+    return null;
   }
   if (allowedRoles && !allowedRoles.some(role => hasRole(role))) {
     return <Navigate to="/patients" replace />;

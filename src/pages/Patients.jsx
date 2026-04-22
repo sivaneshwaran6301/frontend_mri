@@ -31,7 +31,7 @@ export default function Patients() {
 
   const filteredPatients = patients.filter(p => {
     const q = search.toLowerCase();
-    const searchable = `${p.patient_name || ''} ${p.doctor_name || ''} ${p.id}`.toLowerCase();
+    const searchable = `${p.patient_name || ''} ${p.doctor_name || ''} ${p.id || ''} ${p.patient_id}`.toLowerCase();
     return searchable.includes(q);
   });
 
@@ -102,10 +102,10 @@ export default function Patients() {
               </thead>
               <tbody>
                 {filteredPatients.map((p) => (
-                  <tr key={p.id} className="patient-row">
+                  <tr key={p.patient_id} className="patient-row">
                     <td>
-                      <Link to={`/viewer/${p.id}`} className="id-link" title={`View 3D model for patient #${p.id}`}>
-                        #{p.id}
+                      <Link to={`/viewer/${p.patient_id}`} className="id-link" title={`View 3D model for patient #${p.id || p.patient_id}`}>
+                        #{p.id || p.patient_id}
                       </Link>
                     </td>
                     <td><span className="patient-name">{p.patient_name || '—'}</span></td>
