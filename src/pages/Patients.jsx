@@ -60,10 +60,10 @@ export default function Patients() {
 
       <div className="table-card">
         <div className="table-toolbar">
-          <input 
-            type="text" 
-            className="search-box" 
-            placeholder="Search patients…" 
+          <input
+            type="text"
+            className="search-box"
+            placeholder="Search patients ID/Report ID"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -71,7 +71,7 @@ export default function Patients() {
             ↻ Refresh
           </button>
         </div>
-        
+
         <div className="table-body">
           {loading ? (
             <div className="state-container">
@@ -95,6 +95,7 @@ export default function Patients() {
               <thead>
                 <tr>
                   <th>ID</th>
+                  <th>Patient ID</th>
                   <th>Patient Name</th>
                   <th>Doctor</th>
                   <th>Date</th>
@@ -105,9 +106,10 @@ export default function Patients() {
                   <tr key={p.patient_id} className="patient-row">
                     <td>
                       <Link to={`/viewer/${p.patient_id}`} className="id-link" title={`View 3D model for patient #${p.id || p.patient_id}`}>
-                        #{p.id || p.patient_id}
+                        #{p.patient_id}
                       </Link>
                     </td>
+                    <td>{p.id}</td>
                     <td><span className="patient-name">{p.patient_name || '—'}</span></td>
                     <td><span className="doctor-name">{p.doctor_name || '—'}</span></td>
                     <td><span className="date-cell">{formatDate(p.date)}</span></td>

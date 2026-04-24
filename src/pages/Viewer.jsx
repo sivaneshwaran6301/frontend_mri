@@ -84,7 +84,7 @@ export default function Viewer() {
   const [loadError, setLoadError] = useState('');
 
   const [visibility, setVisibility] = useState({ brain: true, skull: true, net: true, edema: true, et: true });
-  const [opacities, setOpacities] = useState({ brain: 0.85, skull: 0.2, net: 1, edema: 0.9, et: 1 });
+  const [opacities, setOpacities] = useState({ brain: 0.85, skull: 0.2, net: 1, edema: 1, et: 1 });
 
   const meshesRef = useRef({});
 
@@ -113,6 +113,13 @@ export default function Viewer() {
   const [currentSlice, setCurrentSlice] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const playIntervalRef = useRef(null);
+
+  // Visual zoom/pan state
+  const [vScale, setVScale] = useState(1);
+  const [vOffset, setVOffset] = useState({ x: 0, y: 0 });
+  const [isPanningV, setIsPanningV] = useState(false);
+  const [vStartMouse, setVStartMouse] = useState({ x: 0, y: 0 });
+  const [vStartOffset, setVStartOffset] = useState({ x: 0, y: 0 });
 
   const totalSlices = useMemo(() => {
     if (!visualInfo?.modalities) return 0;
@@ -743,6 +750,15 @@ export default function Viewer() {
 
   const onWheelVisual = (e) => {
     if (tab !== 'visual' || !totalSlices) return;
+
+    if (e.shiftKey && viewMode === 'single') {
+      // Zoom logic
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setVScale((s) => Math.max(0.5, Math.min(10, s + delta)));
+      return;
+    }
+
     e.preventDefault();
     const delta = e.deltaY > 0 ? 1 : -1;
     setCurrentSlice((s) => {
@@ -751,6 +767,32 @@ export default function Viewer() {
       if (n < 0) n = totalSlices - 1;
       return n;
     });
+  };
+
+  const handleMouseDownV = (e) => {
+    if (viewMode !== 'single') return;
+    setIsPanningV(true);
+    setVStartMouse({ x: e.clientX, y: e.clientY });
+    setVStartOffset({ x: vOffset.x, y: vOffset.y });
+  };
+
+  const handleMouseMoveV = (e) => {
+    if (!isPanningV) return;
+    const dx = e.clientX - vStartMouse.x;
+    const dy = e.clientY - vStartMouse.y;
+    setVOffset({
+      x: vStartOffset.x + dx,
+      y: vStartOffset.y + dy,
+    });
+  };
+
+  const handleMouseUpV = () => {
+    setIsPanningV(false);
+  };
+
+  const resetVisualView = () => {
+    setVScale(1);
+    setVOffset({ x: 0, y: 0 });
   };
 
   const volumes = useMemo(() => {
@@ -799,8 +841,8 @@ export default function Viewer() {
         </div>
 
         <div className="viewer-header-info">
-          <span className="viewer-header-badge">PT #{patient?.id || id || '—'}</span>
-          {patient?.patient_id && <span className="viewer-header-badge">Patient ID: {patient.patient_id}</span>}
+          <span className="viewer-header-badge">Patient ID: #{patient?.id || id || '—'}</span>
+          {patient?.patient_id && <span className="viewer-header-badge">Report ID: {patient.patient_id}</span>}
           <span className="viewer-header-badge">{patient?.patient_name || 'Loading...'}</span>
           <Link to="/patients" className="viewer-nav-link">← All Patients</Link>
           <button onClick={async () => { await logoutBackend(); window.location.href = '/login'; }} className="viewer-nav-link logout-btn" type="button">
@@ -817,12 +859,12 @@ export default function Viewer() {
                 <div className="viewer-section-title">Patient Information</div>
                 <div className="viewer-info-card">
                   <div className="viewer-info-row">
-                    <span className="viewer-info-label">DB ID</span>
-                    <span className="viewer-info-value accent">#{patient?.id || '—'}</span>
+                    <span className="viewer-info-label">Report ID</span>
+                    <span className="viewer-info-value accent">#{patient?.patient_id || '—'}</span>
                   </div>
                   <div className="viewer-info-row">
                     <span className="viewer-info-label">Patient ID</span>
-                    <span className="viewer-info-value accent">{patient?.patient_id || '—'}</span>
+                    <span className="viewer-info-value accent">{patient?.id || '—'}</span>
                   </div>
                   <div className="viewer-info-row">
                     <span className="viewer-info-label">Bed No</span>
@@ -997,7 +1039,12 @@ export default function Viewer() {
                       key={mod}
                       type="button"
                       className={`viewer-modality-item ${active ? 'active' : ''} ${loaded ? '' : 'disabled'}`}
-                      onClick={() => loaded && setActiveModality(mod)}
+                      onClick={() => {
+                        if (loaded) {
+                          setActiveModality(mod);
+                          resetVisualView();
+                        }
+                      }}
                       disabled={!loaded}
                     >
                       <span className="viewer-modality-color" style={{ background: mod === 'flair' ? '#ff6b8a' : mod === 't1' ? '#7c3aed' : mod === 't1ce' ? '#00e5ff' : '#44ff88' }} />
@@ -1013,7 +1060,7 @@ export default function Viewer() {
                 <button type="button" className={`viewer-modality-item ${viewMode === 'all' ? 'active' : ''}`} onClick={() => setViewMode('all')}>
                   <span className="viewer-modality-label">All 4 Views</span>
                 </button>
-                <button type="button" className={`viewer-modality-item ${viewMode === 'single' ? 'active' : ''}`} onClick={() => setViewMode('single')}>
+                <button type="button" className={`viewer-modality-item ${viewMode === 'single' ? 'active' : ''}`} onClick={() => { setViewMode('single'); resetVisualView(); }}>
                   <span className="viewer-modality-label">Single View</span>
                 </button>
               </div>
@@ -1073,7 +1120,14 @@ export default function Viewer() {
                       <div className="viewer-visual-title">▮ {activeModality.toUpperCase()} View</div>
                       <div className="viewer-visual-slice">Slice {sliceInfoText}</div>
                     </div>
-                    <div className="viewer-visual-content">
+                    <div
+                      className="viewer-visual-content"
+                      onMouseDown={handleMouseDownV}
+                      onMouseMove={handleMouseMoveV}
+                      onMouseUp={handleMouseUpV}
+                      onMouseLeave={handleMouseUpV}
+                      style={{ cursor: isPanningV ? 'grabbing' : vScale > 1 ? 'grab' : 'default' }}
+                    >
                       <div className="viewer-orientation-marker left-side">L</div>
                       <div className="viewer-orientation-marker right-side">R</div>
                       {preloadedImages[activeModality]?.[currentSlice] ? (
@@ -1081,14 +1135,38 @@ export default function Viewer() {
                           className="viewer-slice-img"
                           alt="MRI Slice"
                           src={preloadedImages[activeModality][currentSlice].src}
+                          style={{
+                            transform: `translate(${vOffset.x}px, ${vOffset.y}px) scale(${vScale})`,
+                            transition: isPanningV ? 'none' : 'transform 0.1s ease-out'
+                          }}
+                          draggable={false}
                         />
                       ) : (
                         <img
                           className="viewer-slice-img"
                           alt="MRI Slice"
                           src={`${API_BASE}/patients/${id}/visual/slice/${activeModality}/${currentSlice}?token=${getToken() || ''}`}
+                          style={{
+                            transform: `translate(${vOffset.x}px, ${vOffset.y}px) scale(${vScale})`,
+                            transition: isPanningV ? 'none' : 'transform 0.1s ease-out'
+                          }}
+                          draggable={false}
                         />
                       )}
+
+                      <div className="viewer-visual-hud">
+                        <button className="viewer-hud-btn" type="button" onClick={() => setVScale(s => Math.min(10, s + 0.2))}>
+                          +
+                        </button>
+                        <button className="viewer-hud-btn" type="button" onClick={() => setVScale(s => Math.max(0.5, s - 0.2))}>
+                          -
+                        </button>
+                        <button className="viewer-hud-btn" type="button" onClick={resetVisualView}>
+                          ⌂ Reset
+                        </button>
+                      </div>
+
+                      <div className="viewer-camera-hint">Shift + Scroll · zoom | Drag · pan</div>
                     </div>
                   </div>
                 ) : (

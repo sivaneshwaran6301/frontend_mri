@@ -9,7 +9,7 @@ export default function Header() {
 
   const handleLogout = async () => {
     await logoutBackend();
-    window.location.href = '/login';
+    window.location.href = '/frontend_mri/login#/login';
   };
 
   return (
